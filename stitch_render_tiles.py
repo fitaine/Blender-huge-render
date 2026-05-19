@@ -29,13 +29,13 @@ Image.MAX_IMAGE_PIXELS = None
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 
 # Folder produced by render_tiles_65k.py  (must contain manifest.json)
-RENDER_TILES_DIR = r"C:\Users\Tiphaine\Pictures\3D\2023-11-01_Plateau de Bure - Interferometre\tiles\2023-11-01_Plateau de Bure - Interferometre"
+RENDER_TILES_DIR = r"C:\path\to\project\tiles\SceneName"
 
 # Where to save the stitched image (folder)
-OUTPUT_DIR = r"C:\Users\Tiphaine\Pictures\3D\2023-11-01_Plateau de Bure - Interferometre"
+OUTPUT_DIR = r"C:\path\to\project"
 
 # Output filename (without extension — extension is added from FORMAT)
-OUTPUT_NAME = "Plateau de Bure - Interferometre"
+OUTPUT_NAME = "SceneName"
 
 # Output format: "JPEG", "TIFF", or "PNG"
 FORMAT = "JPEG"
