@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+*.pyo
+
+# Render output — tiles, previews, stats (stay local, never commit)
+tiles/
+**/tile_r*.jpg
+**/tile_r*.png
+**/manifest.json
+**/render_stats.txt
+**/render_timing.json
+**/grid_preview.png
+**/_preview_*/
+**/sample_comparison.jpg
+**/seam_*/
+
+# Temp / OS
+.DS_Store
+Thumbs.db
+desktop.ini
