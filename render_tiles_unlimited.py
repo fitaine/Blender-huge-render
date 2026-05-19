@@ -390,6 +390,9 @@ def _save_snapshot(path, state, cam_obj, total_W, total_H, tile_W, tile_H, sampl
                          round(_math.degrees(rot.y), 3),
                          round(_math.degrees(rot.z), 3)],
         "samples":      samples,
+        "adaptive_sampling": getattr(bpy.context.scene.cycles, "use_adaptive_sampling", None),
+        "adaptive_threshold": getattr(bpy.context.scene.cycles, "adaptive_threshold", None),
+        "adaptive_min_samples": getattr(bpy.context.scene.cycles, "adaptive_min_samples", None),
         "frame":        bpy.context.scene.frame_current,
         "total_W":      total_W,
         "total_H":      total_H,
@@ -944,6 +947,16 @@ def render_tiles(
         print(f"  Session     : resuming — {already_done}/{total} done,"
               f"  {remaining} remaining")
     print(f"  Est. time   : {eta_str}")
+    if hasattr(scene, "cycles"):
+        _adapt = getattr(scene.cycles, "use_adaptive_sampling", None)
+        _thr   = getattr(scene.cycles, "adaptive_threshold",    None)
+        _mins  = getattr(scene.cycles, "adaptive_min_samples",  None)
+        if _adapt:
+            print(f"  Sampling    : adaptive  {_mins}–{scene.cycles.samples}"
+                  f"  threshold {_thr}")
+        else:
+            print(f"  Sampling    : fixed  {scene.cycles.samples} samples"
+                  f"  (adaptive OFF)")
     print(f"{'═' * 64}\n")
 
     # ── Manifest — preserve tile_times from previous sessions ───────────────────
