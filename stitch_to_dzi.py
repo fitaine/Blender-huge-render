@@ -32,35 +32,13 @@ Image.MAX_IMAGE_PIXELS = None
 
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
-
-# SOURCE: render-tiles folder  B above)
-SOURCE = r"C:\Users\Tiphaine\Pictures\3D\2023-09-30_Aiguille du midi\tiles\2023-09-30_Aiguille du midi - 120k"
-
-# Website base directory
-WEBSITE_DIR = r"C:\Users\Tiphaine\Pictures\3D\LIDAR PROJECT\Website\test"
-
-# Series folder name inside  tiles/  and  images.js
-SERIES = "LIDAR"
-
-# Name of the image in the viewer
-IMAGE_NAME = "Aiguille du Midi"
-
-# DZI parameters (must match generate_tiles.py)
-DZI_TILE_SIZE = 256
-DZI_OVERLAP   = 1
-DZI_FORMAT    = "jpeg"
-DZI_QUALITY   = 100
-
-# (Mode A only) How many levels below max to switch from render-tile cutting
-# to full-image stitching. 1 = stitch at 1/2 scale (~3 GB for a 65k image).
-STITCH_START_LEVEL_OFFSET = 1
-
-# (Mode A only) Vertical crop — trim pixels from the assembled image without
-# re-rendering.  Use to recover a misframed render (e.g. wrong sensor_fit).
-# 0 = no crop.  Fine-tune ±few hundred px against an F12 reference render.
-CROP_TOP    = 9500    # pixels to remove from the top    (Aiguille du Midi - 120k)
-CROP_BOTTOM = 0       # pixels to remove from the bottom (Aiguille du Midi - 120k)
-
+# Edit config.py (gitignored) — copy config.example.py if it doesn't exist yet.
+try:
+    from config import (SOURCE, WEBSITE_DIR, SERIES, IMAGE_NAME,
+                        DZI_TILE_SIZE, DZI_OVERLAP, DZI_FORMAT, DZI_QUALITY,
+                        STITCH_START_LEVEL_OFFSET, CROP_TOP, CROP_BOTTOM)
+except ImportError:
+    raise SystemExit("config.py not found — copy config.example.py to config.py and fill in your paths.")
 # ── END CONFIG ────────────────────────────────────────────────────────────────
 
 

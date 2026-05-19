@@ -27,24 +27,11 @@ Image.MAX_IMAGE_PIXELS = None
 
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
-
-# Folder produced by render_tiles_65k.py  (must contain manifest.json)
-RENDER_TILES_DIR = r"C:\path\to\project\tiles\SceneName"
-
-# Where to save the stitched image (folder)
-OUTPUT_DIR = r"C:\path\to\project"
-
-# Output filename (without extension — extension is added from FORMAT)
-OUTPUT_NAME = "SceneName"
-
-# Output format: "JPEG", "TIFF", or "PNG"
-FORMAT = "JPEG"
-
-# JPEG quality (1–95). 92 = same as render tiles. 95 = slightly higher.
-JPEG_QUALITY = 92
-
-# TIFF compression: "none", "lzw", "zip"  (ignored for JPEG/PNG)
-TIFF_COMPRESSION = "lzw"
+# Edit config.py (gitignored) — copy config.example.py if it doesn't exist yet.
+try:
+    from config import RENDER_TILES_DIR, OUTPUT_DIR, OUTPUT_NAME, FORMAT, JPEG_QUALITY, TIFF_COMPRESSION
+except ImportError:
+    raise SystemExit("config.py not found — copy config.example.py to config.py and fill in your paths.")
 
 # Overwrite existing output file?
 OVERWRITE = False

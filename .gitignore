@@ -1,3 +1,6 @@
+# Local config — never commit (copy config.example.py to config.py)
+config.py
+
 __pycache__/
 *.pyc
 *.pyo
