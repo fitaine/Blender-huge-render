@@ -55,8 +55,8 @@ TILE_LONG      = 4096       # tile long-edge in pixels (power of 2 recommended)
                             # tile short-edge is derived from the image aspect ratio
 OUTPUT_DIR     = "//tiles/" # relative to .blend file, or absolute path
 RENDER_NAME    = ""         # sub-folder name;  "" = use .blend filename
-FILE_FORMAT    = "PNG"      # "JPEG" or "PNG"
-JPEG_QUALITY   = 92         # ignored for PNG
+FILE_FORMAT    = "JPEG"      # "JPEG" or "PNG"
+JPEG_QUALITY   = 95         # ignored for PNG
 SKIP_EXISTING  = True       # True = skip tiles already on disk (resume support)
 
 # GPU rendering — Cycles only.
@@ -321,11 +321,11 @@ def load_timing(timing_path):
         return {}
 
 
-def save_timing(timing_path, avg_seconds, session_seconds,
-                tile_W, tile_H, compute_device, scene_name, prev_total=0.0):
+def save_timing(timing_path, avg_seconds, total_seconds,
+                tile_W, tile_H, compute_device, scene_name):
     data = {
         "avg_seconds_per_tile"  : round(avg_seconds, 2),
-        "total_render_seconds"  : round(prev_total + session_seconds, 1),
+        "total_render_seconds"  : round(total_seconds, 1),
         "tile_W"                : tile_W,
         "tile_H"                : tile_H,
         "compute_device"        : compute_device,
@@ -334,6 +334,36 @@ def save_timing(timing_path, avg_seconds, session_seconds,
     }
     with open(timing_path, "w") as f:
         json.dump(data, f, indent=2)
+
+
+def _backfill_tile_times(tile_dir, tile_times, N_rows, N_cols):
+    """
+    Estimate render time for tiles that have no recorded time, using file
+    modification timestamps.  Gap between consecutive tiles (sorted by mtime)
+    ≈ render time of the later tile.  Gaps > 1 hour are treated as session
+    breaks and skipped.  Returns the number of tiles backfilled.
+    """
+    GAP_THRESHOLD = 3600
+    tiles_on_disk = []
+    for row in range(N_rows):
+        for col in range(N_cols):
+            base = os.path.join(tile_dir, f"tile_r{row:04d}_c{col:04d}")
+            for x in (".jpg", ".jpeg", ".png"):
+                p = base + x
+                if os.path.exists(p):
+                    tiles_on_disk.append((os.path.getmtime(p), os.path.basename(p)))
+                    break
+    tiles_on_disk.sort()
+    backfilled = 0
+    for i in range(1, len(tiles_on_disk)):
+        _, fname = tiles_on_disk[i]
+        if fname in tile_times:
+            continue
+        gap = tiles_on_disk[i][0] - tiles_on_disk[i - 1][0]
+        if 0 < gap < GAP_THRESHOLD:
+            tile_times[fname] = round(gap, 1)
+            backfilled += 1
+    return backfilled
 
 
 # ── Settings snapshot ────────────────────────────────────────────────────────
@@ -916,7 +946,21 @@ def render_tiles(
     print(f"  Est. time   : {eta_str}")
     print(f"{'═' * 64}\n")
 
-    # ── Manifest — written before the loop so it exists if interrupted ─────────
+    # ── Manifest — preserve tile_times from previous sessions ───────────────────
+    _old_manifest = {}
+    if os.path.exists(manifest_path):
+        try:
+            with open(manifest_path) as _f:
+                _old_manifest = json.load(_f)
+        except Exception:
+            pass
+    tile_times = dict(_old_manifest.get("tile_times", {}))
+    if already_done > 0 and not preview_mode:
+        _backfilled = _backfill_tile_times(tile_dir, tile_times, N_rows, N_cols)
+        if _backfilled > 0:
+            print(f"  ⏱  Backfilled timing estimates for {_backfilled} tiles"
+                  f" from file timestamps.")
+
     manifest = {
         "scene"       : name,
         "camera"      : cam_obj.name,
@@ -932,6 +976,7 @@ def render_tiles(
         "long_edge"   : max(total_W, total_H),
         "tiles_total" : total,
         "tiles_done"  : already_done,
+        "tile_times"  : tile_times,
         "note"        : "row/col in filename = image coordinates (row 0 = top-left)",
     }
     with open(manifest_path, "w") as f:
@@ -1109,6 +1154,7 @@ def render_tiles(
                     break   # only 1 tile needed
 
                 render_times.append(tile_elapsed)
+                manifest["tile_times"][filename] = round(tile_elapsed, 2)
                 already_done += 1
                 manifest["tiles_done"] = already_done
                 with open(manifest_path, "w") as f:
@@ -1152,9 +1198,9 @@ def render_tiles(
         session_seconds = time.time() - session_start
         if render_times and not preview_mode:
             session_avg = sum(render_times) / len(render_times)
-            save_timing(timing_path, session_avg, session_seconds,
-                        tile_W, tile_H, compute_device, name,
-                        prev_total=prev_total_s)
+            save_timing(timing_path, session_avg,
+                        sum(manifest["tile_times"].values()),
+                        tile_W, tile_H, compute_device, name)
 
     # ── Final manifest update ──────────────────────────────────────────────────
     if errors:
@@ -1165,7 +1211,7 @@ def render_tiles(
 
     # ── Statistics file ────────────────────────────────────────────────────────
     if not preview_mode:
-        total_render_seconds = prev_total_s + session_seconds
+        total_render_seconds = sum(manifest["tile_times"].values())
         _write_stats(
             stats_path           = os.path.join(abs_out, "render_stats.txt"),
             name                 = name,
